@@ -1,0 +1,27 @@
+name: japanese_pronunciation_app
+description: A Japanese pronunciation assessment app using Azure Speech Services
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  record: ^4.4.4
+  path_provider: ^2.0.15
+  azure_cognitiveservices_speech: ^1.3.0
+  provider: ^6.0.5
+  flutter_dotenv: ^5.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
