@@ -4,6 +4,7 @@ import { PlayCircle } from "lucide-react"
 import { useRef } from "react"
 import { useSpeech } from "../contexts/SpeechContext"
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition"
+import SemiCircleTest from "./test/SemiCircleTest"
 
 export function ResultsSection() {
   const { realtimeText, assessmentResult, isProcessing } = useSpeech()
@@ -54,6 +55,19 @@ export function ResultsSection() {
             </Button>
           )}
         </div>
+
+        {/* 总分显示 */}
+        {assessmentResult && (
+          <div className="flex flex-col items-center">
+            <SemiCircleTest 
+              value={assessmentResult.totalScore}
+              size={200}
+            />
+            <p className="text-sm text-muted-foreground mt-2">
+              总体评分
+            </p>
+          </div>
+        )}
 
         {/* 其他评测结果内容 */}
       </div>
