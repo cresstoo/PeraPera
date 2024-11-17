@@ -1,6 +1,8 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import MeCab from 'mecab-async';
+import MeCab = require('mecab-async');
+import { GrammarService } from './services/grammarService';
+import type { MecabFeatures, GrammarAnalysis, GrammarScore } from './types';
 
 const app = express();
 const mecab = new MeCab();
@@ -32,12 +34,24 @@ interface AnalyzeResponse {
     verbConjugation: boolean;
     period: boolean;
   };
+  subScores?: {
+    structure: number;
+    predicate: number;
+    particles: number;
+    wordOrder: number;
+    styleConsistency?: number;
+  };
+  errors?: {
+    modifierErrors?: string[];
+    particleErrors?: string[];
+    styleErrors?: string[];
+  };
 }
 
 app.post('/analyze', async (req: Request, res: Response<AnalyzeResponse>) => {
   const { text } = req.body;
   
-  mecab.parse(text, (err, result) => {
+  mecab.parse(text, (err: Error | null, result: MecabFeatures[]) => {
     if (err) {
       res.status(500).json({
         isValid: false,
@@ -55,6 +69,7 @@ app.post('/analyze', async (req: Request, res: Response<AnalyzeResponse>) => {
       return;
     }
 
+    // 使用 MecabWord 映射
     const words = result.map(([surface, pos, pos1, pos2, pos3, conj1, conj2, baseform, reading]) => ({
       surface,
       feature: [pos, pos1, pos2, pos3, conj1, conj2].filter(x => x !== '*').join(','),
@@ -67,45 +82,39 @@ app.post('/analyze', async (req: Request, res: Response<AnalyzeResponse>) => {
       reading: reading === '*' ? surface : reading
     }));
 
-    // 语法分析
-    const analysis = {
-      topic: words.some((word, i) => 
-        (word.pos === '名詞' || word.pos === '代名詞') && 
-        words[i + 1]?.surface === 'は'
-      ),
-      subject: words.some((word, i) => 
-        (word.pos === '名詞' || word.pos === '代名詞') && 
-        words[i + 1]?.surface === 'が'
-      ),
-      verbEnding: (() => {
-        const lastContentWord = words.filter(w => w.pos !== '記号')[words.length - 1];
-        return lastContentWord && (
-          lastContentWord.pos === '動詞' ||
-          (lastContentWord.pos === '助動詞' && ['です', 'ます'].includes(lastContentWord.surface))
-        );
-      })(),
-      verbConjugation: words.some(word => 
-        word.pos === '動詞' && 
-        ['連用形', '未然形', '連体形'].includes(word.conjugation || '')
-      ),
-      period: words[words.length - 1]?.surface === '。'
-    };
+    // 使用 GrammarService 进行分析和评分
+    const grammarAnalysis = GrammarService.analyzeGrammar(result);
+    const grammarScore = GrammarService.calculateScore(result, grammarAnalysis);
 
-    // 计算语法得分
-    const scores = {
-      structure: (analysis.topic || analysis.subject) ? 40 : 0,  // 主题/主语
-      predicate: analysis.verbEnding ? 60 : 0  // 谓语
-    };
-
-    const grammarScore = Object.values(scores).reduce((a, b) => a + b, 0);
-
-    res.json({
-      isValid: grammarScore >= 60,
-      grammarScore,
-      details: words.map(word => `${word.surface}: ${word.feature}`),
+    // 转换为 API 响应格式
+    const response: AnalyzeResponse = {
+      isValid: grammarScore.total >= 60,
+      grammarScore: grammarScore.total,
+      details: [
+        ...grammarScore.details,
+        ...words.map(word => `${word.surface}: ${word.feature}`)
+      ],
       words,
-      analysis
-    });
+      analysis: {
+        topic: grammarAnalysis.structure.hasTopic,
+        subject: grammarAnalysis.structure.hasSubject,
+        verbEnding: grammarAnalysis.predicate.type !== null,
+        verbConjugation: grammarAnalysis.predicate.form.tense !== null,
+        period: grammarAnalysis.wordOrder.isValid
+      },
+      // 添加子项分数
+      subScores: {
+        structure: grammarScore.structure,
+        predicate: grammarScore.predicate,
+        particles: grammarScore.particles,
+        wordOrder: grammarScore.wordOrder,
+        styleConsistency: grammarScore.subScores?.styleConsistency
+      },
+      // 添加错误信息
+      errors: grammarScore.errors
+    };
+
+    res.json(response);
   });
 });
 

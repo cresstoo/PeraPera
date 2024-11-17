@@ -2,8 +2,7 @@
   "compilerOptions": {
     "target": "es2017",
     "module": "commonjs",
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "lib": ["es2017", "dom"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -12,14 +11,15 @@
       "./src/types",
       "./node_modules/@types"
     ],
-    "allowJs": true,
-    "resolveJsonModule": true
+    "baseUrl": ".",
+    "paths": {
+      "*": ["src/types/*"]
+    }
   },
   "include": [
     "src/**/*"
   ],
   "exclude": [
-    "node_modules",
-    "dist"
+    "node_modules"
   ]
 } 

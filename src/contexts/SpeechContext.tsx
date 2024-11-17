@@ -3,7 +3,7 @@ import { createContext, useContext, useState } from 'react';
 export interface WordAssessment {
   word: string;
   accuracyScore: number;
-  errorType: string;
+  errorType: 'None' | 'Omission' | 'Insertion' | 'Mispronunciation' | 'UnexpectedBreak' | 'MissingBreak' | 'Monotone';
   isCorrect: boolean;
   isComplete: boolean;
   grammarInfo?: {
@@ -18,9 +18,13 @@ export interface AssessmentResult {
   words: WordAssessment[];
   totalScore: number;
   pronunciationScore: number;
+  accuracyScore: number;
+  fluencyScore: number;
+  completenessScore: number;
   grammarScore: number;
   isComplete: boolean;
   expectedText: string;
+  comments: string[];
 }
 
 interface RealtimeText {
@@ -34,6 +38,8 @@ interface SpeechContextType {
   setAssessmentResult: (result: AssessmentResult | null) => void;
   isProcessing: boolean;
   setIsProcessing: (processing: boolean) => void;
+  audioBlob: Blob | null;
+  setAudioBlob: (blob: Blob | null) => void;
 }
 
 const SpeechContext = createContext<SpeechContextType | null>(null);
@@ -42,6 +48,7 @@ export function SpeechProvider({ children }: { children: React.ReactNode }) {
   const [realtimeText, setRealtimeText] = useState<RealtimeText | null>(null);
   const [assessmentResult, setAssessmentResult] = useState<AssessmentResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
 
   return (
     <SpeechContext.Provider
@@ -52,6 +59,8 @@ export function SpeechProvider({ children }: { children: React.ReactNode }) {
         setAssessmentResult,
         isProcessing,
         setIsProcessing,
+        audioBlob,
+        setAudioBlob,
       }}
     >
       {children}

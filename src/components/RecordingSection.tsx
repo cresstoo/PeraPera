@@ -1,14 +1,16 @@
-import { Box, IconButton, Typography } from '@mui/material';
+import React from 'react';
+import { Box } from '@mui/material';
 import { useState, useRef, useEffect } from 'react';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useSpeech } from '../contexts/SpeechContext';
+import { RecordButton } from './ui/record-button';
 
-const RECORDING_TIMEOUT = 30; // 30秒录音限制
+const RECORDING_TIMEOUT = 30;
 
 export default function RecordingSection({ targetText }: { targetText?: string }) {
   const [isRecording, setIsRecording] = useState(false);
   const [timeLeft, setTimeLeft] = useState(RECORDING_TIMEOUT);
-  const { startRealtimeRecognition } = useSpeechRecognition();
+  const { startRealtimeRecognition, audioBlob } = useSpeechRecognition();
   const { isProcessing } = useSpeech();
   const stopFnRef = useRef<(() => Promise<void>) | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -46,11 +48,14 @@ export default function RecordingSection({ targetText }: { targetText?: string }
 
   const handleClick = async () => {
     try {
+      console.log('点击录音按钮, 当前状态:', isRecording);
       if (isRecording && stopFnRef.current) {
+        console.log('停止录音');
         await stopFnRef.current();
         stopFnRef.current = null;
         setIsRecording(false);
       } else {
+        console.log('开始录音');
         const stopFn = await startRealtimeRecognition(targetText);
         stopFnRef.current = stopFn;
         setIsRecording(true);
@@ -64,50 +69,11 @@ export default function RecordingSection({ targetText }: { targetText?: string }
 
   return (
     <Box sx={{ textAlign: 'center', my: 4 }}>
-      <IconButton
+      <RecordButton
+        isRecording={isRecording}
+        timeLeft={timeLeft}
         onClick={handleClick}
-        disableRipple
-        sx={{
-          width: 80,
-          height: 80,
-          bgcolor: '#673AB7',
-          borderRadius: '50%',
-          '& .MuiTouchRipple-root': {
-            display: 'none'
-          },
-          '&.MuiButtonBase-root': {
-            bgcolor: '#673AB7'
-          }
-        }}
-      >
-        {isRecording ? (
-          <Box
-            sx={{
-              width: 20,
-              height: 20,
-              bgcolor: '#FFFFFF',
-              borderRadius: 1,
-            }}
-          />
-        ) : (
-          <svg width="40" height="40" viewBox="0 0 24 24">
-            <path
-              d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2Z M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"
-              fill="#FFFFFF"
-            />
-          </svg>
-        )}
-      </IconButton>
-
-      {isRecording && (
-        <Typography 
-          variant="body2" 
-          color="error" 
-          sx={{ mt: 2 }}
-        >
-          剩余时间: {timeLeft}秒
-        </Typography>
-      )}
+      />
     </Box>
   );
 } 

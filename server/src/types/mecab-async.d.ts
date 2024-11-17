@@ -1,5 +1,5 @@
 declare module 'mecab-async' {
-  type MecabFeatures = [
+  export type MecabFeatures = [
     surface: string,    // 表层形式
     pos: string,       // 词性
     pos1: string,      // 词性细分类1
@@ -13,6 +13,7 @@ declare module 'mecab-async' {
   ];
 
   class MeCab {
+    constructor();
     parse(text: string, callback: (error: Error | null, result: MecabFeatures[]) => void): void;
     parseSync(text: string): MecabFeatures[];
     wakachi(text: string, callback: (error: Error | null, result: string[]) => void): void;
