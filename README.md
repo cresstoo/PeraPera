@@ -20,3 +20,8 @@
 ## 本地开发
 
 1. 克隆项目
+
+# 语法评分系统
+
+## 评分算法
+详细的评分算法说明请参见 [SCORING_ALGORITHM.md](docs/SCORING_ALGORITHM.md)

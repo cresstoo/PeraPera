@@ -1,49 +1,46 @@
 // 语法分析结果接口
 export interface GrammarAnalysis {
-  // 句子结构分析
+  // 结构分析
   structure: {
-    hasSubject: boolean;     // 主语
-    hasTopic: boolean;       // 主题（は）
-    hasObject: boolean;      // 宾语（を）
-    hasIndirectObject: boolean; // 间接宾语（に）
-    hasPredicate: boolean;   // 谓语
-    hasModifier: boolean;    // 修饰语
+    hasSubject: boolean;
+    hasTopic: boolean;
+    hasObject: boolean;
+    hasIndirectObject: boolean;
+    hasPredicate: boolean;
+    hasModifier: boolean;
   };
-
   // 谓语分析
   predicate: {
-    type: 'verb' | 'adjective' | 'copula' | null;  // 谓语类型
+    type: 'verb' | 'adjective' | 'copula' | null;
     form: {
-      tense: 'present' | 'past' | null;     // 时态
-      polarity: 'positive' | 'negative';     // 肯定/否定
-      style: 'plain' | 'polite' | null;      // 简体/敬体
-      aspect: 'simple' | 'progressive' | 'perfect' | null; // 体
+      tense: 'present' | 'past' | null;
+      polarity: 'positive' | 'negative';
+      style: 'plain' | 'polite' | null;
+      aspect: 'simple' | 'progressive' | 'perfect' | null;
     };
   };
-
-  // 助词使用分析
+  // 助词分析
   particles: {
-    topic: string[];      // は、も
-    subject: string[];    // が
-    object: string[];     // を
-    indirect: string[];   // に、へ
-    direction: string[];  // から、まで
-    other: string[];     // で、と等
+    topic: string[];
+    subject: string[];
+    object: string[];
+    indirect: string[];
+    direction: string[];
+    other: string[];
   };
-
   // 语序分析
   wordOrder: {
-    isValid: boolean;     // 语序是否正确
-    errors: string[];     // 语序错误描述
+    isValid: boolean;
+    errors: string[];
   };
 }
 
 // 语法评分结果
 export interface GrammarScore {
-  total: number;          // 总分
-  structure: number;      // 结构分
-  predicate: number;      // 谓语分
-  particles: number;      // 助词分
-  wordOrder: number;      // 语序分
-  details: string[];      // 详细评分说明
+  total: number;       // 总分
+  structure: number;   // 结构分
+  predicate: number;   // 谓语分
+  particles: number;   // 助词分
+  wordOrder: number;   // 语序分
+  details: string[];   // 评价详情
 } 

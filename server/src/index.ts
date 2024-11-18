@@ -1,32 +1,26 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, RequestHandler } from 'express';
 import cors from 'cors';
 import MeCab = require('mecab-async');
 import { GrammarService } from './services/grammarService';
 import type { MecabFeatures, GrammarAnalysis, GrammarScore } from './types';
+import { spawn } from 'child_process';
+import { promisify } from 'util';
+import fs from 'fs';
+import fileUpload from 'express-fileupload';
+import { UploadedFile } from 'express-fileupload';
 
 const app = express();
 const mecab = new MeCab();
 
 app.use(cors());
 app.use(express.json());
-
-interface MecabWord {
-  surface: string;
-  feature: string;
-  pos: string;
-  pos1: string;
-  pos2: string;
-  pos3: string;
-  conjugation: string;
-  baseform: string;
-  reading: string;
-}
+app.use(fileUpload());
 
 interface AnalyzeResponse {
   isValid: boolean;
   grammarScore: number;
   details: string[];
-  words: MecabWord[];
+  words: MecabFeatures[];
   analysis: {
     topic: boolean;
     subject: boolean;
@@ -48,75 +42,98 @@ interface AnalyzeResponse {
   };
 }
 
-app.post('/analyze', async (req: Request, res: Response<AnalyzeResponse>) => {
-  const { text } = req.body;
-  
-  mecab.parse(text, (err: Error | null, result: MecabFeatures[]) => {
-    if (err) {
-      res.status(500).json({
-        isValid: false,
-        grammarScore: 0,
-        details: [err.message],
-        words: [],
-        analysis: {
-          topic: false,
-          subject: false,
-          verbEnding: false,
-          verbConjugation: false,
-          period: false
-        }
-      });
-      return;
+interface TranscribeRequest extends Request {
+  files?: {
+    audio?: UploadedFile;
+  };
+}
+
+app.post('/analyze', async (req, res) => {
+  try {
+    const { text } = req.body;
+    console.log('[Server] 分析文本:', text);
+    
+    const result = await promisify(mecab.parse.bind(mecab))(text) as MecabFeatures[];
+    console.log('[Server] MeCab分析结果:', result);
+    
+    // 先进行语法分析
+    const grammarAnalysis = GrammarService.analyzeGrammar(result);
+    console.log('[Server] 语法分析结果:', grammarAnalysis);
+    
+    // 然后计算分数
+    const scores = GrammarService.calculateScore(result, grammarAnalysis);
+    console.log('[Server] 评分结果:', scores);
+    
+    res.json({
+      isValid: true,
+      words: result,
+      grammarScore: scores.total,
+      details: scores.details,
+      analysis: grammarAnalysis,
+      subScores: {
+        structure: scores.structure,
+        predicate: scores.predicate,
+        particles: scores.particles,
+        wordOrder: scores.wordOrder
+      }
+    });
+  } catch (error: any) {
+    console.error('[Server] 分析错误:', error);
+    res.status(500).json({ 
+      isValid: false, 
+      error: error.message || '未知错误'
+    });
+  }
+});
+
+const handleTranscribe: RequestHandler = async (req, res) => {
+  try {
+    const audioFile = req.files?.audio as UploadedFile | undefined;
+    if (!audioFile) {
+      return res.status(400).json({ error: '没有收到音频文件' });
     }
 
-    // 使用 MecabWord 映射
-    const words = result.map(([surface, pos, pos1, pos2, pos3, conj1, conj2, baseform, reading]) => ({
-      surface,
-      feature: [pos, pos1, pos2, pos3, conj1, conj2].filter(x => x !== '*').join(','),
-      pos,
-      pos1,
-      pos2,
-      pos3,
-      conjugation: conj1,
-      baseform: baseform === '*' ? surface : baseform,
-      reading: reading === '*' ? surface : reading
-    }));
+    // 保存音频文件
+    const tempPath = `/tmp/audio-${Date.now()}.webm`;
+    await audioFile.mv(tempPath);
 
-    // 使用 GrammarService 进行分析和评分
-    const grammarAnalysis = GrammarService.analyzeGrammar(result);
-    const grammarScore = GrammarService.calculateScore(result, grammarAnalysis);
+    // 调用 Whisper 进行识别
+    const whisper = spawn('whisper', [
+      tempPath,
+      '--language', 'ja',
+      '--model', 'small',  // 使用小模型以提高速度
+      '--output_format', 'json'
+    ]);
 
-    // 转换为 API 响应格式
-    const response: AnalyzeResponse = {
-      isValid: grammarScore.total >= 60,
-      grammarScore: grammarScore.total,
-      details: [
-        ...grammarScore.details,
-        ...words.map(word => `${word.surface}: ${word.feature}`)
-      ],
-      words,
-      analysis: {
-        topic: grammarAnalysis.structure.hasTopic,
-        subject: grammarAnalysis.structure.hasSubject,
-        verbEnding: grammarAnalysis.predicate.type !== null,
-        verbConjugation: grammarAnalysis.predicate.form.tense !== null,
-        period: grammarAnalysis.wordOrder.isValid
-      },
-      // 添加子项分数
-      subScores: {
-        structure: grammarScore.structure,
-        predicate: grammarScore.predicate,
-        particles: grammarScore.particles,
-        wordOrder: grammarScore.wordOrder,
-        styleConsistency: grammarScore.subScores?.styleConsistency
-      },
-      // 添加错误信息
-      errors: grammarScore.errors
-    };
+    let output = '';
+    whisper.stdout.on('data', (data) => {
+      output += data;
+    });
 
-    res.json(response);
-  });
-});
+    await new Promise((resolve, reject) => {
+      whisper.on('close', (code) => {
+        if (code === 0) resolve(code);
+        else reject(new Error(`Whisper 识别失败: ${code}`));
+      });
+    });
+
+    // 清理临时文件
+    fs.unlinkSync(tempPath);
+
+    // 解析结果
+    const result = JSON.parse(output);
+    res.json({
+      text: result.text,
+      segments: result.segments
+    });
+
+  } catch (error) {
+    console.error('语音识别失败:', error);
+    res.status(500).json({ error: '语音识别失败' });
+  }
+};
+
+app.post('/transcribe', handleTranscribe);
 
 app.listen(3001, () => {
   console.log('Server running on port 3001');

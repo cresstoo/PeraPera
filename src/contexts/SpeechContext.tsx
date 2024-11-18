@@ -3,10 +3,10 @@ import { createContext, useContext, useState } from 'react';
 export interface WordAssessment {
   word: string;
   accuracyScore: number;
-  errorType: 'None' | 'Omission' | 'Insertion' | 'Mispronunciation' | 'UnexpectedBreak' | 'MissingBreak' | 'Monotone';
+  errorType: string;
   isCorrect: boolean;
   isComplete: boolean;
-  grammarInfo?: {
+  grammarInfo: {
     pos: string;
     reading: string;
     baseform: string;
