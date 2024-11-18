@@ -6,137 +6,74 @@ import { minchoFont } from '../theme';
 
 // 获取颜色函数
 const getScoreColor = (score: number): string => {
-  if (score >= 80) return '#4caf50';  // 绿色
-  if (score >= 60) return '#ff9800';  // 黄色
-  return '#f44336';  // 红色
+  if (score >= 90) return '#4caf50';  // 绿色 - 优秀
+  if (score >= 80) return '#8bc34a';  // 黄绿色 - 良好
+  if (score >= 60) return '#ff9800';  // 黄色 - 及格
+  return '#f44336';  // 红色 - 不及格
 };
 
-// 进度条组件
-const ScoreProgress = ({ label, value, maxValue = 100 }: { 
-  label: string; 
-  value: number;
-  maxValue?: number;
-}) => {
-  // 计算百分比（用于进度条显示）
-  const percentage = (value / maxValue) * 100;
-
-  return (
-    <Box sx={{ mb: 3, width: '100%' }}>
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between',
-        mb: 1
-      }}>
-        <Typography variant="body2" color="text.secondary">
-          {label}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {label === '总分' ? 
-            `${value.toFixed(0)}分` :  // 总分显示为"xx分"
-            `${percentage.toFixed(1)}%`  // 其他显示为百分比
-          }
-        </Typography>
-      </Box>
-      <Box sx={{
-        width: '100%',
-        height: 6,
-        backgroundColor: '#EDF2F7',
-        borderRadius: 3,
-        overflow: 'hidden'
-      }}>
-        <Box
-          sx={{
-            width: `${percentage}%`,
-            height: '100%',
-            backgroundColor: getScoreColor(percentage),
-            transition: 'width 0.5s ease-in-out'
-          }}
-        />
-      </Box>
-    </Box>
-  );
-};
-
-// 单词评估组件
-const WordAssessment = ({ word, accuracyScore, errorType }: { 
-  word: string; 
-  accuracyScore: number;
-  errorType: string;
-}) => {
-  // 获取错误类型的颜色和提示
-  const getErrorStyle = (errorType: string) => {
-    switch(errorType) {
-      case 'Mispronunciation':
-        return { color: '#f44336', tooltip: '发音不准确' };
-      case 'Omission':
-        return { color: '#f44336', tooltip: '遗漏' };
-      case 'Insertion':
-        return { color: '#ff9800', tooltip: '多余插入' };
-      case 'UnexpectedBreak':
-        return { color: '#ff9800', tooltip: '不当停顿' };
-      case 'MissingBreak':
-        return { color: '#ff9800', tooltip: '缺少停顿' };
-      case 'Monotone':
-        return { color: '#ff9800', tooltip: '语调单调' };
-      default:
-        return { 
-          color: getScoreColor(accuracyScore),
-          tooltip: ''
-        };
-    }
-  };
-
-  // 标点符号不需要样式
-  if (word.match(/[、。？！]/)) {
-    return <span style={{ fontFamily: minchoFont }}>{word}</span>;
+// 添加错误样式函数
+const getErrorStyle = (errorType: string, accuracyScore: number) => {
+  // 根据错误类型和分数返回不同的样式
+  if (accuracyScore >= 90) {
+    return { color: '#4caf50' };  // 绿色 - 优秀
   }
+  if (accuracyScore >= 80) {
+    return { color: '#8bc34a' };  // 黄绿色 - 良好
+  }
+  if (accuracyScore >= 60) {
+    return { color: '#ff9800' };  // 橙色 - 及格
+  }
+  
+  // 根据错误类型设置不同的颜色
+  switch (errorType) {
+    case 'Mispronunciation':
+      return { color: '#f44336' };  // 红色 - 发音错误
+    case 'Omission':
+      return { color: '#e91e63' };  // 粉色 - 遗漏
+    case 'Insertion':
+      return { color: '#9c27b0' };  // 紫色 - 多余
+    default:
+      return { color: '#f44336' };  // 红色 - 默认错误
+  }
+};
 
-  const errorStyle = getErrorStyle(errorType);
-
-  return (
-    <Box
-      component="span"
-      title={errorStyle.tooltip}
-      sx={{
-        display: 'inline-block',
-        mx: 0.5,
-        position: 'relative',
-        fontWeight: 500,
-        fontFamily: minchoFont,
-        fontSize: '1.1rem',
-        letterSpacing: '0.03em',
-        color: errorStyle.color,
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 1,
-          borderBottom: '1px solid',
-          borderColor: 'text.primary'
-        }
-      }}
-    >
-      {word}
-    </Box>
-  );
+// 获取颜色和评语函数
+const getScoreLevel = (score: number): {
+  color: string;
+  comment: string;
+} => {
+  if (score >= 90) return {
+    color: '#4caf50',  // 绿色 - 优秀
+    comment: '优秀'
+  };
+  if (score >= 80) return {
+    color: '#8bc34a',  // 黄绿色 - 良好
+    comment: '良好'
+  };
+  if (score >= 60) return {
+    color: '#ff9800',  // 黄色 - 及格
+    comment: '及格'
+  };
+  return {
+    color: '#f44336',  // 红色 - 不及格
+    comment: '需要加强'
+  };
 };
 
 // 评价建议区域组件
 const AssessmentDetails = ({ details }: { details: string[] }) => (
-  <Box sx={{ 
-    mt: -1,  // 向上移动
-    mb: 2, 
-    pl: 2 
-  }}>
+  <Box sx={{ mt: -1, mb: 2, pl: 2 }}>
     <Typography 
+      component="div" 
       variant="body2" 
       color="text.secondary"
       sx={{ 
         borderLeft: '2px solid',
         borderColor: 'primary.main',
         pl: 1,
-        py: 0.5
+        py: 0.5,
+        fontSize: '0.875rem'
       }}
     >
       {details.map((detail, index) => (
@@ -147,6 +84,111 @@ const AssessmentDetails = ({ details }: { details: string[] }) => (
     </Typography>
   </Box>
 );
+
+// 修改进度条组件
+const ScoreProgress = ({ label, value, maxValue = 100, details }: { 
+  label: string; 
+  value: number;
+  maxValue?: number;
+  details?: string[];
+}) => {
+  return (
+    <Box sx={{ mb: 4, width: '100%' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between',
+        mb: 1
+      }}>
+        <Typography variant="body2" color="text.secondary">
+          {label}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {`${Math.round((value / maxValue) * 100)}%`}
+        </Typography>
+      </Box>
+      <Box sx={{
+        width: '100%',
+        height: 6,
+        backgroundColor: '#EDF2F7',
+        borderRadius: 3,
+        overflow: 'hidden',
+        mb: 1
+      }}>
+        <Box
+          sx={{
+            width: `${(value / maxValue) * 100}%`,
+            height: '100%',
+            backgroundColor: getScoreColor(value),
+            transition: 'width 0.5s ease-in-out'
+          }}
+        />
+      </Box>
+      {details && details.length > 0 && (
+        <Box sx={{ mt: 1, pl: 2 }}>
+          <Typography 
+            component="div" 
+            variant="body2" 
+            color="text.secondary"
+            sx={{ 
+              borderLeft: '2px solid',
+              borderColor: 'primary.main',
+              pl: 1,
+              py: 0.5,
+              fontSize: '0.875rem'
+            }}
+          >
+            {details.map((detail, index) => (
+              <Box key={index} sx={{ mb: 0.5 }}>
+                • {detail}
+              </Box>
+            ))}
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+// 单词评估组件
+const WordAssessment = ({ word, accuracyScore, errorType }: { 
+  word: string; 
+  accuracyScore: number;
+  errorType: string;
+}) => {
+  // 标点符号检查
+  if (word && typeof word === 'string' && word.match(/[、。？！]/)) {
+    return (
+      <span style={{ 
+        fontFamily: minchoFont,
+        color: '#000000',
+        margin: '0 4px',
+        display: 'inline-block'
+      }}>
+        {word}
+      </span>
+    );
+  }
+
+  return (
+    <span style={{ 
+      display: 'inline-block',
+      margin: '0 6px',
+      fontWeight: 600,
+      fontFamily: minchoFont,
+      fontSize: '1.1rem',
+      letterSpacing: '0.03em',
+      color: getScoreColor(accuracyScore),
+      textDecoration: 'underline',
+      textDecorationColor: '#000000',
+      textDecorationThickness: '1px',
+      textUnderlineOffset: '0.1em',
+      textDecorationSkipInk: 'none',
+      lineHeight: '1.8'
+    }}>
+      {word}
+    </span>
+  );
+};
 
 export default function ResultsSection() {
   const { realtimeText, assessmentResult, audioBlob } = useSpeech();
@@ -185,7 +227,7 @@ export default function ResultsSection() {
     }
   }, [audioBlob]);
 
-  // 监听音频播放结束
+  // 监音频播放结束
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -298,10 +340,10 @@ export default function ResultsSection() {
             )}
           </IconButton>
 
-          {/* 录音文本 */}
+          {/* 录音文本区域 */}
           <Box sx={{ flex: 1 }}>
-            {assessmentResult ? (
-              <Box>
+            {assessmentResult && assessmentResult.text ? (
+              <div style={{ lineHeight: '1.8' }}>
                 {assessmentResult.words.map((word, index) => (
                   <WordAssessment
                     key={index}
@@ -310,13 +352,21 @@ export default function ResultsSection() {
                     errorType={word.errorType}
                   />
                 ))}
-              </Box>
+              </div>
+            ) : realtimeText && realtimeText.text ? (
+              <Typography color="text.secondary" sx={{ 
+                fontFamily: minchoFont,
+                fontSize: '1.1rem',
+                lineHeight: 1.8
+              }}>
+                {realtimeText.text}
+              </Typography>
             ) : (
               <Typography color="text.secondary" sx={{ 
                 fontFamily: minchoFont,
                 fontSize: '1.1rem'
               }}>
-                {realtimeText?.text || '等待录音...'}
+                等待录音...
               </Typography>
             )}
           </Box>
@@ -341,9 +391,15 @@ export default function ResultsSection() {
             value={assessmentResult ? assessmentResult.totalScore : 0}
             size={220}
             defaultComment={{
-              short: '等待评价',
-              detail: '等待评价...'
+              short: `${assessmentResult ? Math.round(assessmentResult.totalScore) : 0}分`,
+              detail: assessmentResult ? 
+                getScoreLevel(assessmentResult.totalScore).comment : 
+                '等待评价...'
             }}
+            color={assessmentResult ? 
+              getScoreLevel(assessmentResult.totalScore).color : 
+              '#f44336'
+            }
           />
         </Box>
 
@@ -356,36 +412,25 @@ export default function ResultsSection() {
           {/* 发音准确率 */}
           <ScoreProgress 
             label="发音准确率" 
-            value={assessmentResult ? assessmentResult.pronunciationScore : 0}
+            value={assessmentResult?.pronunciationScore || 0}
             maxValue={100}
+            details={assessmentResult?.comments?.filter(comment => 
+              comment.includes('发音') ||
+              comment.includes('语速') ||
+              comment.includes('流畅')
+            )}
           />
-          {assessmentResult?.comments && (
-            <AssessmentDetails 
-              details={assessmentResult.comments.filter(comment => 
-                comment.includes('发音') || 
-                comment.includes('音素') || 
-                comment.includes('语速') ||
-                comment.includes('流畅')
-              )}
-            />
-          )}
 
           {/* 语法准确率 */}
           <ScoreProgress 
             label="语法准确率" 
-            value={assessmentResult ? assessmentResult.grammarScore : 0}
+            value={assessmentResult?.grammarScore || 0}
             maxValue={100}
+            details={assessmentResult?.comments?.filter(comment => 
+              comment.includes('句型') ||
+              comment.includes('语法')
+            )}
           />
-          {assessmentResult?.comments && (
-            <AssessmentDetails 
-              details={assessmentResult.comments.filter(comment => 
-                comment.includes('语法') || 
-                comment.includes('句式') || 
-                comment.includes('助词') ||
-                comment.includes('语序')
-              )}
-            />
-          )}
         </Box>
       </Box>
 
