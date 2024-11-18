@@ -1,27 +1,24 @@
 # PeraPera - 日本語発音評価アプリ
 
-一个基于Azure语音服务的日语发音评估应用。
+日本語学習者のための発音評価アプリケーション。Azure Speech Service と MeCab を使用して、発音とグラマーを評価します。
 
-## 功能特点
+## 特徴
 
-- 跟读练习：提供多个难度等级的日语句子进行跟读练习
-- 自由练习：可以自由录制日语句子进行发音评估
-- 实时识别：支持实时语音转文字
-- 发音评分：提供单词级别的发音准确度评估
-- 直观反馈：使用颜色和分数直观显示发音正确性
+- リアルタイム発音評価
+- 文法分析
+- 詳細なフィードバック
+- 視覚的な進捗表示
 
-## 技术栈
+## 技術スタック
 
-- React + TypeScript
-- Material-UI
-- Azure Speech Service
-- Vite
+- Frontend: React + TypeScript
+- Backend: Node.js + Express
+- Speech Analysis: Azure Speech Service
+- Grammar Analysis: MeCab
 
-## 本地开发
+## インストール
 
-1. 克隆项目
+# 語法評価システム
 
-# 语法评分系统
-
-## 评分算法
-详细的评分算法说明请参见 [SCORING_ALGORITHM.md](docs/SCORING_ALGORITHM.md)
+## 評価アルゴリズム
+詳細な評価アルゴリズムの説明は [SCORING_ALGORITHM.md](docs/SCORING_ALGORITHM.md) を参照してください。
