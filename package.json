@@ -1,12 +1,13 @@
 {
-  "name": "pera-pera",
+  "name": "pera-score",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "find-brand": "node --loader ts-node/esm scripts/find-brand.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
@@ -31,11 +32,12 @@
   },
   "devDependencies": {
     "@shadcn/ui": "^0.0.4",
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.17.6",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
     "@vitejs/plugin-react": "^4.0.3",
-    "typescript": "^5.0.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3",
     "vite": "^4.4.4"
   }
 }

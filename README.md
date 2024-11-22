@@ -1,4 +1,4 @@
-# PeraPera - 日本語発音評価アプリ
+# PeraScore - 日本語発音評価アプリ
 
 日本語学習者のための発音評価アプリケーション。Azure Speech Service と MeCab を使用して、発音とグラマーを評価します。
 
